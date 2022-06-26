@@ -1,6 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
+import * as XLSX from "xlsx";
 
 const Home = () => {
+  const [excelData, setExcelData] = useState([]);
+  const handleFileRead = (file) => {
+    const promise = new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsArrayBuffer(file);
+      fileReader.onload = (e) => {
+        const bufferArray = e.target.result;
+        const wb = XLSX.read(bufferArray, { type: "buffer" });
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+        const data = XLSX.utils.sheet_to_json(ws);
+        resolve(data);
+      };
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+
+    promise.then((d) => {
+      setExcelData(d);
+    });
+  };
   return (
     <>
       <div className="min-h-full">
@@ -54,12 +77,23 @@ const Home = () => {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              type="submit"
+                            <input
+                              type="file"
+                              className="hidden"
+                              id="fileUpload"
+                              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                handleFileRead(file);
+                              }}
+                            />
+                            <label
+                              htmlFor="fileUpload"
+                              type="button"
                               className="mt-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                               Multiple Warehouse Task
-                            </button>
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -134,7 +168,7 @@ const Home = () => {
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg mb-5">
                       <table className="min-w-full divide-y divide-gray-300">
                         <thead className="bg-gray-50">
-                          <tr>
+                          <tr className="divide-x divide-gray-200">
                             <th
                               scope="col"
                               className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
@@ -198,20 +232,59 @@ const Home = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                          {[1, 2, 3, 4, 5, 6, 7, 8].map((row, index) => (
-                            <tr>
-                              <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"></td>
-                            </tr>
-                          ))}
+                          {excelData.map(
+                            (
+                              {
+                                fromLocation,
+                                toLocation,
+                                product,
+                                tgtQty,
+                                qtyMoq,
+                                picks,
+                                pickTime,
+                                distance,
+                                walkTime,
+                                loadingWeight,
+                              },
+                              index
+                            ) => (
+                              <tr
+                                key={index}
+                                className="divide-x divide-gray-200"
+                              >
+                                <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                  {fromLocation}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {toLocation}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {product}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {tgtQty}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {qtyMoq}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {picks}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {pickTime}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {distance}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {walkTime}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {loadingWeight}
+                                </td>
+                              </tr>
+                            )
+                          )}
                         </tbody>
                       </table>
                     </div>
