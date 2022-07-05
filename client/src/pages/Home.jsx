@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import { getPickzeitData } from "../api/vPointToStack";
 
 const Home = () => {
+  const [pickzeit, setPickZeit] = useState("00:00:00");
+  const [picks, setPicks] = useState(0);
   const [excelData, setExcelData] = useState([]);
   const handleFileRead = (file) => {
     const promise = new Promise((resolve, reject) => {
@@ -22,8 +25,30 @@ const Home = () => {
 
     promise.then((d) => {
       setExcelData(d);
+      getPickzeit(d);
+      getPicks(d);
     });
   };
+
+  const getPickzeit = async (csvData) => {
+    const { data } = await getPickzeitData(csvData);
+    const milliSeconds = data.weightSum * 1000;
+    const currentTime = new Date();
+    setPickZeit(
+      new Date(currentTime.getTime() + milliSeconds)
+        .toLocaleTimeString()
+        .split(" ")[0]
+    );
+  };
+
+  const getPicks = (csvData) => {
+    var sumPicks = 0;
+    csvData.forEach(({ tgtQty }) => {
+      sumPicks += tgtQty;
+    });
+    setPicks(sumPicks);
+  };
+
   return (
     <>
       <div className="min-h-full">
@@ -311,7 +336,7 @@ const Home = () => {
                             Σ Picks
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            45
+                            {picks}
                           </dd>
                         </div>
                         <div className="px-4 py-5 bg-white shadow rounded-lg overflow-hidden sm:p-6">
@@ -319,7 +344,7 @@ const Home = () => {
                             Pickzeit [h:min:s]
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            11:24:30
+                            {pickzeit}
                           </dd>
                         </div>
                         <div className="px-4 py-5 bg-white shadow rounded-lg overflow-hidden sm:p-6">
