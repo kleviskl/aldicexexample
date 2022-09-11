@@ -11,7 +11,7 @@ const vPointToStackRoutes = require("./routes/vPointToStack");
 
 // environment variables
 env.config();
-
+console.log(process.env.MONGODB_CONNECTION_STRING);
 // mongodb connection
 mongoose.connect(
   process.env.MONGODB_CONNECTION_STRING,

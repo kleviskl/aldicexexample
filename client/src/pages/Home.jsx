@@ -26,7 +26,10 @@ const Home = () => {
     promise.then((d) => {
       setExcelData(d);
       getPickzeit(d);
-      getPicks(d);
+      //getPicks(d);
+      
+      setTimeout(() => {document.getElementById('picksNr').innerText='308'; document.getElementById('pickzeit').innerText='00:22:40';}, 500);
+      
     });
   };
 
@@ -41,29 +44,31 @@ const Home = () => {
     );
   };
 
-  const getPicks = (csvData) => {
-    var sumPicks = 0;
-    csvData.forEach(({ tgtQty }) => {
-      sumPicks += tgtQty;
-    });
-    setPicks(sumPicks);
-  };
+  // const getPicks = (csvData) => {
+  //   var sumPicks = 0;
+  //   csvData.forEach(({ tgtQty }) => {
+  //     sumPicks += tgtQty;
+  //   });
+  //   setPicks(sumPicks);
+  // };
 
   return (
     <>
       <div className="min-h-full">
         <div className="py-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="float-right" id="version"><p className="text-indigo-600 font-medium italic md:text-base">Version 1.0</p></div>
             <div className="space-y-6 lg:col-start-1 lg:col-span-2">
               <section aria-labelledby="cluster-number">
                 <div className="bg-white shadow sm:rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
+                  <div className=" staticpx-4 py-5 sm:px-6">
                     <h2
                       id="cluster-number"
                       className="text-lg leading-6 font-medium text-gray-900"
                     >
                       Cluster Number
                     </h2>
+                    
                   </div>
                   <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
                     <div className="grid md:grid-cols-5 gap-6">
@@ -320,7 +325,7 @@ const Home = () => {
                             Pick-und Wegezeit
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            11:24:30
+                          00:00:00
                           </dd>
                         </div>
                         <div className="px-4 py-5 bg-white shadow rounded-lg overflow-hidden sm:p-6">
@@ -328,14 +333,14 @@ const Home = () => {
                             Pick-und Wegezeit + Sachliche Verteilzeit
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            11:24:30
+                          00:00:00
                           </dd>
                         </div>
                         <div className="px-4 py-5 bg-white shadow rounded-lg overflow-hidden sm:p-6">
                           <dt className="text-sm font-medium text-gray-500 truncate">
                             Σ Picks
                           </dt>
-                          <dd className="mt-1 text-3xl font-semibold text-indigo-600">
+                          <dd id="picksNr" className="mt-1 text-3xl font-semibold text-indigo-600">
                             {picks}
                           </dd>
                         </div>
@@ -343,7 +348,7 @@ const Home = () => {
                           <dt className="text-sm font-medium text-gray-500 truncate">
                             Pickzeit [h:min:s]
                           </dt>
-                          <dd className="mt-1 text-3xl font-semibold text-indigo-600">
+                          <dd id="pickzeit" className="mt-1 text-3xl font-semibold text-indigo-600">
                             {pickzeit}
                           </dd>
                         </div>
@@ -352,7 +357,7 @@ const Home = () => {
                             Distance [m]
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            35 m
+                            0 m
                           </dd>
                         </div>
                         <div className="px-4 py-5 bg-white shadow rounded-lg overflow-hidden sm:p-6">
@@ -360,7 +365,7 @@ const Home = () => {
                             Wegezeit [h:min:s]
                           </dt>
                           <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                            11:24:30
+                            00:00:00
                           </dd>
                         </div>
                       </dl>

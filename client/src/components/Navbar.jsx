@@ -29,7 +29,13 @@ const Navbar = (props) => {
             <div className="flex justify-between h-16">
               <div className="flex">
                 <div className="flex-shrink-0 flex items-center"></div>
+                  {/* Logo image */}
+                  <div class="flex -space-x-2 overflow-hidden">
+                  <img class="inline-block h-13 w-13 rounded-full ring-3 ring-white" src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Ford_Motor_Company_Logo.svg" alt="">
+                  </img>
+                </div>
                 <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
+                 
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
