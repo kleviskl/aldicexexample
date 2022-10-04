@@ -7,7 +7,7 @@ const Footer = (props) => {
         {/* <div className="flex justify-center space-x-6 md:order-2"></div> */}
         <div className="mt-8 md:mt-0 md:order-1">
           <p className="text-center text-base text-gray-400">
-            Developed By DXC Tecnology For Ford &copy; 2022 All
+          Logo Here (before paragraph) &copy; 2022 Company Name, Inc. All
             rights reserved.
           </p>
            {/* Logo image */}
