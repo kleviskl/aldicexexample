@@ -1,17 +1,30 @@
+const env = require("dotenv");
+
 const express = require("express");
 const mongoose = require("mongoose");
-const env = require("dotenv");
-const path = require("path");
-const app = express();
+const fileupload = require("express-fileupload");
 const cors = require("cors");
-let bodyParser = require("body-parser");
+const bodyParser = require("body-parser");
+const fse = require("fs-extra");
+const excelToJSON = require("convert-excel-to-json");
 
-// routes
-const vPointToStackRoutes = require("./routes/vPointToStack");
+const { VPointToStack } = require("./models/VPointToStack");
 
 // environment variables
 env.config();
-console.log(process.env.MONGODB_CONNECTION_STRING);
+
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(fileupload());
+app.use(express.static("files"));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+const FILE_NAME = "data.xlsx";
+const NEW_PATH = __dirname + "/files/";
+
 // mongodb connection
 mongoose.connect(
   process.env.MONGODB_CONNECTION_STRING,
@@ -25,21 +38,115 @@ mongoose.connect(
   }
 );
 
-// greeting route
-app.get("/", (req, res) => {
-  res.send("Backend APIs working...!!!");
+app.post("/upload", async (req, res) => {
+  try {
+    const file = req.files.file;
+
+    // delete all files in files directory
+    fse.emptyDirSync(NEW_PATH);
+
+    await file.mv(`${NEW_PATH}${FILE_NAME}`);
+
+    return res
+      .status(200)
+      .json({ status: "SUCCESS", message: "File uploaded" });
+  } catch (error) {
+    console.log("Error is: ", error);
+    return res
+      .status(500)
+      .json({ status: "ERROR", message: "Could not upload file" });
+  }
 });
 
-// middleware
-app.use(cors());
-app.use(express.json());
-app.use(bodyParser.json({ limit: "100mb" }));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.urlencoded({ extended: true }));
+app.get("/read-upload", async (_, res) => {
+  try {
+    // convert uploaded Excel file to JSON
+    const excelData = excelToJSON({
+      sourceFile: `files/${FILE_NAME}`,
+      header: {
+        rows: 1,
+      },
+      columnToKey: {
+        "*": "{{columnHeader}}",
+      },
+    });
 
-app.use("/public", express.static(path.join(__dirname, "uploads")));
-app.use("/api/vPointToStack", vPointToStackRoutes);
+    // Check worksheet "Beispiel Zone X" exists and contains data
+    if (
+      excelData &&
+      excelData["Beispiel Zone X"] &&
+      excelData["Beispiel Zone X"].length
+    ) {
+      const data = excelData["Beispiel Zone X"];
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
+      // TODO: Check excel data keys validation
+
+      let outputData = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const {
+          ["Warehouse Order"]: warehoouseOrder,
+          ["Source Storage Bin"]: sourceStorageBin,
+          Product,
+          ["Product Short Description"]: productShortDescription,
+          ["Src Trgt Qty BUoM"]: srcTrgtQtyBUoM,
+          ["Minimum Order Quantity"]: minimumOrderQuantity,
+          ["Loading Weight"]: loadingWeight,
+          ["Weight Unit"]: weightUnit,
+          ["Loading Volume"]: loadingVolume,
+          ["Volume Unit"]: volumeUnit,
+          Wave,
+          Sequence,
+          Route,
+          ["Warehouse Task"]: warehouseTask,
+          ["Warehouse Process Cat. Desc."]: warehouseProcessCatDesc,
+          ["Confirmation Date"]: confirmaationDate,
+          ["Confirmation Time"]: confirmationTime,
+          ["Ship-to"]: shipTo,
+        } = data[i];
+
+        const outputObject = {
+          "Warehouse Order": warehoouseOrder,
+          From: i === 0 ? "dashboard" : sourceStorageBin,
+          To: i === data.length - 1 ? "konsoplatz" : sourceStorageBin,
+          Product,
+          "Product Short Description": productShortDescription,
+          "Src Trgt Qty BUoM": srcTrgtQtyBUoM,
+          "Qty per Minimum Order Quantity": minimumOrderQuantity,
+          Picks: 1, // TODO: Calculate Picks
+          "Loading Weight": loadingWeight,
+          "Weight Unit": weightUnit,
+          "Loading Volume": loadingVolume,
+          Wave,
+          Route,
+          "Warehouse Task": warehouseTask,
+          "Warehouse Process Cat. Desc.": warehouseProcessCatDesc,
+          "Confirmation Date": confirmaationDate,
+          "Confirmation Time": confirmationTime,
+          "Ship-to": shipTo,
+          "PickTime [min]": "1", // TODO: Calculate pick time
+          "Distance [m]": "100",
+          "Walk Time [min]": "0", // TODO: Calculate walktime in minutes
+        };
+
+        outputData.push(outputObject);
+      }
+
+      return res
+        .status(200)
+        .json({ status: "SUCCESS", message: "Success", data: outputData });
+    }
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Worksheet Beispiel Zone X not found",
+    });
+  } catch (error) {
+    console.log("Error is: ", error);
+  }
 });
+
+app.get("/download", (req, res) => {
+  return res.download(`${NEW_PATH}${FILE_NAME}`);
+});
+
+app.listen(port, () => console.log(`Server running on port ${port}`));
