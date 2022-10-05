@@ -1,57 +1,75 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { getPickzeitData } from "../api/vPointToStack";
+import axios from 'axios'
+import { ImSpinner8 } from 'react-icons/im';
+import {  toast } from 'react-toastify';
+import FileDownload from 'js-file-download';
+
+
 
 const Home = () => {
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState();
+  const [fileName, setFileName] = useState("");
+  const [outputData, setOutputData] = useState([]);
+
   const [pickzeit, setPickZeit] = useState("00:00:00");
   const [picks, setPicks] = useState(0);
   const [excelData, setExcelData] = useState([]);
-  const handleFileRead = (file) => {
-    const promise = new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsArrayBuffer(file);
-      fileReader.onload = (e) => {
-        const bufferArray = e.target.result;
-        const wb = XLSX.read(bufferArray, { type: "buffer" });
-        const wsName = wb.SheetNames[0];
-        const ws = wb.Sheets[wsName];
-        const data = XLSX.utils.sheet_to_json(ws);
-        resolve(data);
-      };
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
 
-    promise.then((d) => {
-      setExcelData(d);
-      getPickzeit(d);
-      //getPicks(d);
-      
-      setTimeout(() => {document.getElementById('picksNr').innerText='308'; document.getElementById('pickzeit').innerText='00:22:40';}, 500);
-      
-    });
+  const saveFile = (e) => {
+    setFile(e.target.files[0]);
+    setFileName(e.target.files[0].name);
   };
 
-  const getPickzeit = async (csvData) => {
-    const { data } = await getPickzeitData(csvData);
-    const milliSeconds = data.weightSum * 1000;
-    const currentTime = new Date();
-    setPickZeit(
-      new Date(currentTime.getTime() + milliSeconds)
-        .toLocaleTimeString()
-        .split(" ")[0]
+  const downloadFile = async (e) => {
+    try {
+      e.preventDefault();
+      const {data} = await axios({
+        url: "http://localhost:4000/download",
+        method: 'GET',
+        responseType: 'blob',
+      })
+      FileDownload(data, `output-${fileName}`)
+    }catch(error) {
+      console.log('Error is: ', error)
+    }
+  }
+
+  const uploadExcelFile = async () => {
+   try {
+    setLoading(true)
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fileName", fileName);
+
+    const { data: {status, message} } = await axios.post(
+      "http://localhost:4000/upload",
+      formData
     );
-  };
 
-  // const getPicks = (csvData) => {
-  //   var sumPicks = 0;
-  //   csvData.forEach(({ tgtQty }) => {
-  //     sumPicks += tgtQty;
-  //   });
-  //   setPicks(sumPicks);
-  // };
+    if(status === 'SUCCESS') {
+      toast.success(message);
+      const output = await axios.get("http://localhost:4000/read-upload")
+      if(output.data.status === 'SUCCESS') {
+        setOutputData(output.data.data);
+        setLoading(false);
+      }else {
+        toast.error(output.data.message)
+        setLoading(false);
+      }
+    }else {
+      toast.error(message)
+      setLoading(false);
+    }
 
+   }catch(error) {
+    console.log('Error is: ', error);
+    setLoading(false)
+   }
+  }
+
+  
   return (
     <>
       <div className="min-h-full">
@@ -75,7 +93,7 @@ const Home = () => {
                       <div className="col-span-2">
                         <div className="bg-gray-100 rounded-lg">
                           <div className="float-right p-1 bg-indigo-600 hover:bg-indigo-700 rounded-tr-lg rounded-bl-lg cursor-pointer">
-                            <h6 className="font-medium text-xs text-gray-900 text-white">
+                            <h6 className="font-medium text-xs text-gray-900">
                               Zone x
                             </h6>
                           </div>
@@ -109,23 +127,20 @@ const Home = () => {
                             </div>
                             <input
                               type="file"
-                              className="hidden"
                               id="fileUpload"
                               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                handleFileRead(file);
-                              }}
+                              onChange={saveFile}
                             />
-                            <label
-                              htmlFor="fileUpload"
-                              type="button"
-                              className="mt-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            <button 
+                              disabled={loading}
+                              className="bg-indigo-500 p-2 rounded-md" 
+                              onClick={uploadExcelFile}
                             >
-                              Multiple Warehouse Task
-                            </label>
+                              {loading ? <ImSpinner8 className="animate-spin" /> : <span className="text-white">Upload</span>}
+                            </button>
+                            
                           </div>
-                        </div>
+                        </div> 
                       </div>
                       <div className="col-span-3">
                         <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">
@@ -185,14 +200,20 @@ const Home = () => {
                 </div>
               </section>
               <section aria-labelledby="cluster-info">
-                <div className="bg-white shadow sm:rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
+                { loading ? <p>Loading...</p> : outputData && outputData.length ? (<div className="bg-white shadow sm:rounded-lg">
+                  <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
                     <h2
                       id="cluster-info"
                       className="text-lg leading-6 font-medium text-gray-900"
                     >
                       Cluster Info
                     </h2>
+                    <button 
+                      className="bg-green-400 px-4 py-2 rounded-md text-white"
+                      onClick={downloadFile}
+                    >
+                      Download
+                    </button>
                   </div>
                   <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg mb-5">
@@ -262,19 +283,18 @@ const Home = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                          {excelData.map(
+                          {outputData && outputData.length && outputData.map(
                             (
                               {
-                                fromLocation,
-                                toLocation,
-                                product,
-                                tgtQty,
-                                qtyMoq,
-                                picks,
-                                pickTime,
-                                distance,
-                                walkTime,
-                                loadingWeight,
+                                From,
+                                To,
+                                Product,
+                                "Src Trgt Qty BUoM": tgtQty,
+                                "Qty per Minimum Order Quantity": qtyMoq,
+                                Picks: picks,
+                                "PickTime [min]": pickTime,
+                                "Distance [m]": distance,
+                                "Walk Time [min]":  walkTime,
                               },
                               index
                             ) => (
@@ -283,13 +303,13 @@ const Home = () => {
                                 className="divide-x divide-gray-200"
                               >
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                  {fromLocation}
+                                  {From}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {toLocation}
+                                  {To}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {product}
+                                  {Product}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                   {tgtQty}
@@ -310,7 +330,7 @@ const Home = () => {
                                   {walkTime}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {loadingWeight}
+                                  "unknown"
                                 </td>
                               </tr>
                             )
@@ -371,7 +391,7 @@ const Home = () => {
                       </dl>
                     </div>
                   </div>
-                </div>
+                </div>) : null}
               </section>
             </div>
           </div>
