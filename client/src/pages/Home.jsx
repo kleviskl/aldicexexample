@@ -1,48 +1,89 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { getPickzeitData } from "../api/vPointToStack";
+import axios from 'axios'
+import { ImSpinner8 } from 'react-icons/im';
+import {  toast } from 'react-toastify';
+
+
 
 const Home = () => {
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState();
+  const [fileName, setFileName] = useState("");
+
   const [pickzeit, setPickZeit] = useState("00:00:00");
   const [picks, setPicks] = useState(0);
   const [excelData, setExcelData] = useState([]);
-  const handleFileRead = (file) => {
-    const promise = new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsArrayBuffer(file);
-      fileReader.onload = (e) => {
-        const bufferArray = e.target.result;
-        const wb = XLSX.read(bufferArray, { type: "buffer" });
-        const wsName = wb.SheetNames[0];
-        const ws = wb.Sheets[wsName];
-        const data = XLSX.utils.sheet_to_json(ws);
-        resolve(data);
-      };
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
 
-    promise.then((d) => {
-      setExcelData(d);
-      getPickzeit(d);
-      //getPicks(d);
-      
-      setTimeout(() => {document.getElementById('picksNr').innerText='308'; document.getElementById('pickzeit').innerText='00:22:40';}, 500);
-      
-    });
+  const saveFile = (e) => {
+    setFile(e.target.files[0]);
+    setFileName(e.target.files[0].name);
   };
 
-  const getPickzeit = async (csvData) => {
-    const { data } = await getPickzeitData(csvData);
-    const milliSeconds = data.weightSum * 1000;
-    const currentTime = new Date();
-    setPickZeit(
-      new Date(currentTime.getTime() + milliSeconds)
-        .toLocaleTimeString()
-        .split(" ")[0]
+  const uploadExcelFile = async () => {
+   try {
+    setLoading(true)
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fileName", fileName);
+
+    const { data: {status, message} } = await axios.post(
+      "http://localhost:4000/upload",
+      formData
     );
-  };
+
+    if(status === 'SUCCESS') {
+      // 
+      toast.success(message);
+      setLoading(false);
+    }else {
+      toast.error(message)
+      setLoading(false);
+    }
+
+   }catch(error) {
+    console.log('Error is: ', error);
+    setLoading(false)
+   }
+  }
+
+  // const handleFileRead = (file) => {
+  //   const promise = new Promise((resolve, reject) => {
+  //     const fileReader = new FileReader();
+  //     fileReader.readAsArrayBuffer(file);
+  //     fileReader.onload = (e) => {
+  //       const bufferArray = e.target.result;
+  //       const wb = XLSX.read(bufferArray, { type: "buffer" });
+  //       const wsName = wb.SheetNames[0];
+  //       const ws = wb.Sheets[wsName];
+  //       const data = XLSX.utils.sheet_to_json(ws);
+  //       resolve(data);
+  //     };
+  //     fileReader.onerror = (error) => {
+  //       reject(error);
+  //     };
+  //   });
+
+  //   promise.then((d) => {
+  //     setExcelData(d);
+  //     getPickzeit(d);
+  //     //getPicks(d);
+      
+  //     setTimeout(() => {document.getElementById('picksNr').innerText='308'; document.getElementById('pickzeit').innerText='00:22:40';}, 500);
+      
+  //   });
+  // };
+
+  // const getPickzeit = async (csvData) => {
+  //   const { data } = await getPickzeitData(csvData);
+  //   const milliSeconds = data.weightSum * 1000;
+  //   const currentTime = new Date();
+  //   setPickZeit(
+  //     new Date(currentTime.getTime() + milliSeconds)
+  //       .toLocaleTimeString()
+  //       .split(" ")[0]
+  //   );
+  // };
 
   // const getPicks = (csvData) => {
   //   var sumPicks = 0;
@@ -75,7 +116,7 @@ const Home = () => {
                       <div className="col-span-2">
                         <div className="bg-gray-100 rounded-lg">
                           <div className="float-right p-1 bg-indigo-600 hover:bg-indigo-700 rounded-tr-lg rounded-bl-lg cursor-pointer">
-                            <h6 className="font-medium text-xs text-gray-900 text-white">
+                            <h6 className="font-medium text-xs text-gray-900">
                               Zone x
                             </h6>
                           </div>
@@ -109,23 +150,20 @@ const Home = () => {
                             </div>
                             <input
                               type="file"
-                              className="hidden"
                               id="fileUpload"
                               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                handleFileRead(file);
-                              }}
+                              onChange={saveFile}
                             />
-                            <label
-                              htmlFor="fileUpload"
-                              type="button"
-                              className="mt-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            <button 
+                              disabled={loading}
+                              className="bg-indigo-500 p-2 rounded-md" 
+                              onClick={uploadExcelFile}
                             >
-                              Multiple Warehouse Task
-                            </label>
+                              {loading ? <ImSpinner8 className="animate-spin" /> : <span className="text-white">Upload</span>}
+                            </button>
+                            
                           </div>
-                        </div>
+                        </div> 
                       </div>
                       <div className="col-span-3">
                         <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">

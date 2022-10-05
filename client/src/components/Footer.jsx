@@ -11,8 +11,8 @@ const Footer = (props) => {
             rights reserved.
           </p>
            {/* Logo image */}
-      <div class="flex -space-x-2 overflow-hidden">
-                  <img class="inline-block h-10 w-10 rounded-full ring-1 ring-white" src="C:\Users\kkoleci\Desktop\New folder (3)\aldic\client\src\dxc-technology.svg" alt="">
+      <div className="flex -space-x-2 overflow-hidden">
+                  <img className="inline-block h-10 w-10 rounded-full ring-1 ring-white" src="C:\Users\kkoleci\Desktop\New folder (3)\aldic\client\src\dxc-technology.svg" alt="">
                   </img>
                 </div>
         </div>
