@@ -8,7 +8,7 @@ const bodyParser = require("body-parser");
 const fse = require("fs-extra");
 const excelToJSON = require("convert-excel-to-json");
 
-const { VPointToStack } = require("./models/VPointToStack");
+const { getDistance } = require("./utils/getDistance");
 
 // environment variables
 env.config();
@@ -105,10 +105,22 @@ app.get("/read-upload", async (_, res) => {
           ["Ship-to"]: shipTo,
         } = data[i];
 
+        const fromLocation = i === 0 ? "dashboard" : sourceStorageBin;
+
+        // set the last toLocation to equal "konsoplatz"
+        const toLocation =
+          i === data.length - 1 ? "konsoplatz" : sourceStorageBin;
+        const pickTime = await getDistance(fromLocation, toLocation);
+
+        // check if pick time is a number
+        // if it is, divide by 65 else set a dash '-'
+        const computedWalkTime =
+          typeof pickTime === "number" ? (pickTime / 65).toFixed(2) : "-";
+
         const outputObject = {
           "Warehouse Order": warehoouseOrder,
-          From: i === 0 ? "dashboard" : sourceStorageBin,
-          To: i === data.length - 1 ? "konsoplatz" : sourceStorageBin,
+          From: fromLocation,
+          To: toLocation,
           Product,
           "Product Short Description": productShortDescription,
           "Src Trgt Qty BUoM": srcTrgtQtyBUoM,
@@ -124,9 +136,9 @@ app.get("/read-upload", async (_, res) => {
           "Confirmation Date": confirmaationDate,
           "Confirmation Time": confirmationTime,
           "Ship-to": shipTo,
-          "PickTime [min]": "1", // TODO: Calculate pick time
+          "PickTime [min]": pickTime,
           "Distance [m]": "100",
-          "Walk Time [min]": "0", // TODO: Calculate walktime in minutes
+          "Walk Time [min]": computedWalkTime,
         };
 
         outputData.push(outputObject);
