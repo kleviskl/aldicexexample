@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import axios from 'axios'
 import { ImSpinner8 } from 'react-icons/im';
 import {  toast } from 'react-toastify';
+import FileDownload from 'js-file-download';
 
 
 
@@ -10,6 +11,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState();
   const [fileName, setFileName] = useState("");
+  const [outputData, setOutputData] = useState([]);
 
   const [pickzeit, setPickZeit] = useState("00:00:00");
   const [picks, setPicks] = useState(0);
@@ -19,6 +21,20 @@ const Home = () => {
     setFile(e.target.files[0]);
     setFileName(e.target.files[0].name);
   };
+
+  const downloadFile = async (e) => {
+    try {
+      e.preventDefault();
+      const {data} = await axios({
+        url: "http://localhost:4000/download",
+        method: 'GET',
+        responseType: 'blob',
+      })
+      FileDownload(data, `output-${fileName}`)
+    }catch(error) {
+      console.log('Error is: ', error)
+    }
+  }
 
   const uploadExcelFile = async () => {
    try {
@@ -33,9 +49,15 @@ const Home = () => {
     );
 
     if(status === 'SUCCESS') {
-      // 
       toast.success(message);
-      setLoading(false);
+      const output = await axios.get("http://localhost:4000/read-upload")
+      if(output.data.status === 'SUCCESS') {
+        setOutputData(output.data.data);
+        setLoading(false);
+      }else {
+        toast.error(output.data.message)
+        setLoading(false);
+      }
     }else {
       toast.error(message)
       setLoading(false);
@@ -47,6 +69,7 @@ const Home = () => {
    }
   }
 
+  console.log('Output Data is: ', outputData)
   // const handleFileRead = (file) => {
   //   const promise = new Promise((resolve, reject) => {
   //     const fileReader = new FileReader();
@@ -223,14 +246,20 @@ const Home = () => {
                 </div>
               </section>
               <section aria-labelledby="cluster-info">
-                <div className="bg-white shadow sm:rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
+                { loading ? <p>Loading...</p> : outputData && outputData.length ? (<div className="bg-white shadow sm:rounded-lg">
+                  <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
                     <h2
                       id="cluster-info"
                       className="text-lg leading-6 font-medium text-gray-900"
                     >
                       Cluster Info
                     </h2>
+                    <button 
+                      className="bg-green-400 px-4 py-2 rounded-md text-white"
+                      onClick={downloadFile}
+                    >
+                      Download
+                    </button>
                   </div>
                   <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg mb-5">
@@ -300,19 +329,18 @@ const Home = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                          {excelData.map(
+                          {outputData && outputData.length && outputData.map(
                             (
                               {
-                                fromLocation,
-                                toLocation,
-                                product,
-                                tgtQty,
-                                qtyMoq,
-                                picks,
-                                pickTime,
-                                distance,
-                                walkTime,
-                                loadingWeight,
+                                From,
+                                To,
+                                Product,
+                                "Src Trgt Qty BUoM": tgtQty,
+                                "Qty per Minimum Order Quantity": qtyMoq,
+                                Picks: picks,
+                                "PickTime [min]": pickTime,
+                                "Distance [m]": distance,
+                                "Walk Time [min]":  walkTime,
                               },
                               index
                             ) => (
@@ -321,13 +349,13 @@ const Home = () => {
                                 className="divide-x divide-gray-200"
                               >
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                  {fromLocation}
+                                  {From}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {toLocation}
+                                  {To}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {product}
+                                  {Product}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                   {tgtQty}
@@ -348,7 +376,7 @@ const Home = () => {
                                   {walkTime}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  {loadingWeight}
+                                  "unknown"
                                 </td>
                               </tr>
                             )
@@ -409,7 +437,7 @@ const Home = () => {
                       </dl>
                     </div>
                   </div>
-                </div>
+                </div>) : null}
               </section>
             </div>
           </div>
