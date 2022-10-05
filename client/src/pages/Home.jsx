@@ -69,53 +69,7 @@ const Home = () => {
    }
   }
 
-  console.log('Output Data is: ', outputData)
-  // const handleFileRead = (file) => {
-  //   const promise = new Promise((resolve, reject) => {
-  //     const fileReader = new FileReader();
-  //     fileReader.readAsArrayBuffer(file);
-  //     fileReader.onload = (e) => {
-  //       const bufferArray = e.target.result;
-  //       const wb = XLSX.read(bufferArray, { type: "buffer" });
-  //       const wsName = wb.SheetNames[0];
-  //       const ws = wb.Sheets[wsName];
-  //       const data = XLSX.utils.sheet_to_json(ws);
-  //       resolve(data);
-  //     };
-  //     fileReader.onerror = (error) => {
-  //       reject(error);
-  //     };
-  //   });
-
-  //   promise.then((d) => {
-  //     setExcelData(d);
-  //     getPickzeit(d);
-  //     //getPicks(d);
-      
-  //     setTimeout(() => {document.getElementById('picksNr').innerText='308'; document.getElementById('pickzeit').innerText='00:22:40';}, 500);
-      
-  //   });
-  // };
-
-  // const getPickzeit = async (csvData) => {
-  //   const { data } = await getPickzeitData(csvData);
-  //   const milliSeconds = data.weightSum * 1000;
-  //   const currentTime = new Date();
-  //   setPickZeit(
-  //     new Date(currentTime.getTime() + milliSeconds)
-  //       .toLocaleTimeString()
-  //       .split(" ")[0]
-  //   );
-  // };
-
-  // const getPicks = (csvData) => {
-  //   var sumPicks = 0;
-  //   csvData.forEach(({ tgtQty }) => {
-  //     sumPicks += tgtQty;
-  //   });
-  //   setPicks(sumPicks);
-  // };
-
+  
   return (
     <>
       <div className="min-h-full">
